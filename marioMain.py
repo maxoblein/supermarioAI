@@ -85,21 +85,22 @@ def trainMarioModel():
     LogDir = 'logs/'
 
     #set up model saving callback
-    callback = TrainAndLoggingCallback(check_freq = 1000, save_path = CheckpointDir)
+    callback = TrainAndLoggingCallback(check_freq = 10000, save_path = CheckpointDir)
 
     #set up model
     model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LogDir, learning_rate = 0.0001, n_steps = 512)
 
     #train the model
-    model.learn(total_timesteps = 10000, callback = callback)
+    model.learn(total_timesteps = 500000, callback = callback)
 
 if __name__ == '__main__':
 
 
     #test the model at playing supermario
     env = preProcess()
-
+    #train if needed
+    #trainMarioModel()
     #load model
-    model = PPO.load('train/best_model_10000')
+    model = PPO.load('train/best_model_200000')
 
     AIPlayMario(env,model)
