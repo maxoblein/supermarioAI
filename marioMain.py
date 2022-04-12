@@ -11,6 +11,29 @@ from gym.wrappers import GrayScaleObservation
 from stable_baselines3.common.vec_env import VecFrameStack, DummyVecEnv
 #import matplotlib
 from matplotlib import pyplot as plt
+#import os for file management
+import os
+#import PPO to get the algo
+from stable_baselines3 import PPO
+#import base callback for saving models
+from stable_baselines3.common.callbacks import BaseCallback
+
+class TrainAndLoggingCallback(BaseCallback):
+    def __init__(self, check_freq, save_path, verbose=1):
+        super(TrainAndLoggingCallback, self).__init__(verbose)
+        self.check_freq = check_freq
+        self.save_path = save_path
+
+    def _init_callback(self):
+        if self.save_path is not None:
+            os.makedirs(self.save_path,exist_ok=True)
+
+    def _on_step(self):
+        if self.n_calls % self.check_freq == 0:
+            model_path = os.path.join(self.save_path, 'best_model_{}'.format(self.n_calls))
+            self.model.save(model_path)
+        return True
+
 
 def randomActionTest():
     #setup game
@@ -32,7 +55,7 @@ def randomActionTest():
     env.close()
     return True
 
-def preProcess(env):
+def preProcess():
     #1. create base environment
     env = gym_super_mario_bros.make('SuperMarioBros-v0')
     #2. simplify controls
@@ -46,5 +69,37 @@ def preProcess(env):
 
     return env
 
+def AIPlayMario(env,model):
+    #start game
+    state = env.reset()
+    while True:
+        action, _ = model.predict(state)
+        state, reward, done, info = env.step(action)
+        env.render()
+
+def trainMarioModel():
+    #get preprocessed environment
+    env = preProcess()
+
+    CheckpointDir = 'train/'
+    LogDir = 'logs/'
+
+    #set up model saving callback
+    callback = TrainAndLoggingCallback(check_freq = 1000, save_path = CheckpointDir)
+
+    #set up model
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LogDir, learning_rate = 0.0001, n_steps = 512)
+
+    #train the model
+    model.learn(total_timesteps = 10000, callback = callback)
 
 if __name__ == '__main__':
+
+
+    #test the model at playing supermario
+    env = preProcess()
+
+    #load model
+    model = PPO.load('train/best_model_10000')
+
+    AIPlayMario(env,model)
