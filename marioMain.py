@@ -5,8 +5,17 @@ import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
 #import simplified controls
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
+#import frame stacker and grey scale wrappers
+from gym.wrappers import GrayScaleObservation
+#import vectorisation wrappers
+from stable_baselines3.common.vec_env import VecFrameStack, DummyVecEnv
+#import matplotlib
+from matplotlib import pyplot as plt
 
-def randomActionTest(env):
+def randomActionTest():
+    #setup game
+    env = gym_super_mario_bros.make('SuperMarioBros-v0')
+    env = JoypadSpace(env,SIMPLE_MOVEMENT)
     #create loop of random actions to take
     #cretae a flag - restart game or not
     done = True
@@ -23,9 +32,19 @@ def randomActionTest(env):
     env.close()
     return True
 
-if __name__ == '__main__':
-    #setup game
+def preProcess(env):
+    #1. create base environment
     env = gym_super_mario_bros.make('SuperMarioBros-v0')
+    #2. simplify controls
     env = JoypadSpace(env,SIMPLE_MOVEMENT)
+    #3. greyscale
+    env = GrayScaleObservation(env, keep_dim=True)
+    #4. wrap in dummy environment
+    env = DummyVecEnv([lambda:env])
+    #5 stack the frames (4 is variable parameter but 4 works)
+    env = VecFrameStack(env,4,channels_order='last')
 
-    randomActionTest(env)
+    return env
+
+
+if __name__ == '__main__':
